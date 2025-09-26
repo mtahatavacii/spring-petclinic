@@ -1,34 +1,22 @@
 pipeline {
     agent any
 
-    environment {
-        REGISTRY = "harbor.example.com"
-        IMAGE = "harbor.example.com/library/petclinic"
-    }
-
     stages {
         stage('Checkout') {
             steps {
-                git branch: 'main',
-                    url: 'https://github.com/<senin-github-user>/spring-petclinic.git'
+                git url: 'https://github.com/mtahatavacii/spring-petclinic.git', branch: 'main'
             }
         }
 
-        stage('Build JAR') {
-            steps {
-                sh "./mvnw clean package -DskipTests"
-            }
-        }
-
-        stage('Build & Push Docker Image') {
-            steps {
-                script {
-                    docker.withRegistry("https://${env.REGISTRY}", 'harbor-creds') {
-                        def app = docker.build("${IMAGE}:${BUILD_NUMBER}")
-                        app.push()
-                        app.push("latest")
-                    }
+        stage('Build with Maven') {
+            agent {
+                docker {
+                    image 'maven:3.9.5-eclipse-temurin-17'
+                    args '-v /root/.m2:/root/.m2'  // Maven cache mount
                 }
+            }
+            steps {
+                sh "mvn clean package -DskipTests"
             }
         }
     }
